@@ -38,6 +38,22 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="store"
+        options={{
+          title: 'Shop',
+          tabBarIcon: () => <></>,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="inventory"
+        options={{
+          title: 'Items',
+          tabBarIcon: () => <></>,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',
