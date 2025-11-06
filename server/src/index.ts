@@ -13,6 +13,7 @@ import emotionRoutes from './routes/emotion.js';
 import mascotRoutes from './routes/mascot.js';
 import reportRoutes from './routes/report.js';
 import stepRoutes from './routes/steps.js';
+import cycleRoutes from './routes/cycle.js';
 import stubRoutes from './routes/stubs.js';
 
 // Load environment variables
@@ -40,6 +41,7 @@ app.use('/emotion', emotionRoutes);
 app.use('/mascot', mascotRoutes);
 app.use('/report', reportRoutes);
 app.use('/steps', stepRoutes); // Phase 2: Step tracking
+app.use('/cycle', cycleRoutes); // Phase 2: Cycle tracking
 app.use('/', stubRoutes); // Phase 2/3 remaining stubs
 
 // OpenAPI Documentation

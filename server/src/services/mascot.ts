@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { MascotStage, MascotResponse } from '../types/index.js';
 import { calculateStepBonus } from './steps.js';
+import { calculateCycleBonus } from './cycle.js';
 
 const prisma = new PrismaClient();
 
@@ -69,6 +70,7 @@ export function getSupportMessage(emotionLabel: string, intensity: number): stri
  *
  * Rules (Phase 2):
  * - Step bonus: +3 points if reached 8000 steps today
+ * - Cycle bonus: +1 point if logged cycle today
  *
  * Stage thresholds:
  * - score < 10: seed
@@ -127,6 +129,15 @@ export async function calculateMascotGrowth(userId: string): Promise<{ stage: Ma
   } catch (error) {
     // Step tracking is optional, don't fail if not available
     console.warn('Failed to calculate step bonus:', error);
+  }
+
+  // Phase 2: Add cycle bonus
+  try {
+    const cycleBonus = await calculateCycleBonus(userId);
+    totalScore += cycleBonus;
+  } catch (error) {
+    // Cycle tracking is optional, don't fail if not available
+    console.warn('Failed to calculate cycle bonus:', error);
   }
 
   // Determine stage

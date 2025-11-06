@@ -8,15 +8,6 @@ const router = Router();
  * These return 200 OK with "Not Implemented" messages
  */
 
-// Phase 2: Cycle tracking
-router.post('/cycle', authenticateJWT, (req, res) => {
-  res.json({ message: 'Not Implemented', phase: 2, feature: 'cycle-tracking' });
-});
-
-router.get('/cycle', authenticateJWT, (req, res) => {
-  res.json({ message: 'Not Implemented', phase: 2, feature: 'cycle-tracking', data: [] });
-});
-
 // Phase 2: Store
 router.get('/store', authenticateJWT, (req, res) => {
   res.json({ message: 'Not Implemented', phase: 2, feature: 'store', items: [] });
