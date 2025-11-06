@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { MascotStage, MascotResponse } from '../types/index.js';
+import { calculateStepBonus } from './steps.js';
 
 const prisma = new PrismaClient();
 
@@ -62,9 +63,12 @@ export function getSupportMessage(emotionLabel: string, intensity: number): stri
 /**
  * Calculate mascot growth score based on recent emotion entries
  *
- * Rules:
+ * Rules (Phase 1):
  * - For each day with at least 1 entry: +2 points
  * - Intensity adjustment: (10 - avgIntensity) bonus (encourages emotional awareness)
+ *
+ * Rules (Phase 2):
+ * - Step bonus: +3 points if reached 8000 steps today
  *
  * Stage thresholds:
  * - score < 10: seed
@@ -115,6 +119,15 @@ export async function calculateMascotGrowth(userId: string): Promise<{ stage: Ma
     const intensityBonus = Math.max(0, Math.floor((10 - avgIntensity) / 2));
     totalScore += intensityBonus;
   });
+
+  // Phase 2: Add step bonus
+  try {
+    const stepBonus = await calculateStepBonus(userId);
+    totalScore += stepBonus;
+  } catch (error) {
+    // Step tracking is optional, don't fail if not available
+    console.warn('Failed to calculate step bonus:', error);
+  }
 
   // Determine stage
   let stage: MascotStage = 'seed';
