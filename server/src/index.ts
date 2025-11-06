@@ -16,6 +16,7 @@ import stepRoutes from './routes/steps.js';
 import cycleRoutes from './routes/cycle.js';
 import storeRoutes from './routes/store.js';
 import inventoryRoutes from './routes/inventory.js';
+import aiRoutes from './routes/ai.js';
 import stubRoutes from './routes/stubs.js';
 
 // Load environment variables
@@ -46,6 +47,7 @@ app.use('/steps', stepRoutes); // Phase 2: Step tracking
 app.use('/cycle', cycleRoutes); // Phase 2: Cycle tracking
 app.use('/store', storeRoutes); // Phase 2: Store
 app.use('/inventory', inventoryRoutes); // Phase 2: Inventory
+app.use('/ai', aiRoutes); // Phase 3: AI Chat & Insights
 app.use('/', stubRoutes); // Phase 3 remaining stubs
 
 // OpenAPI Documentation

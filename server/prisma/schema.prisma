@@ -18,10 +18,16 @@ model User {
   emotionEntries EmotionEntry[]
   mascotState    MascotState?
 
-  // Phase 2/3 stubs
+  // Phase 2
   stepLogs   StepLog[]
   cycleLogs  CycleLog[]
   inventory  Inventory[]
+
+  // Phase 3
+  aiConversations    AIConversation[]
+  aiInsights         AIInsight[]
+  strategies         Strategy[]
+  mascotCustomization MascotCustomization?
 }
 
 model EmotionEntry {
@@ -94,4 +100,69 @@ model Inventory {
   item ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@unique([userId, itemId])
+}
+
+// Phase 3 Models (LLM Integration & Advanced Features)
+
+model AIConversation {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+
+  user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages AIMessage[]
+
+  @@index([userId, createdAt])
+}
+
+model AIMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String   // 'user' or 'assistant'
+  content        String   // Message content
+  timestamp      DateTime @default(now())
+  tokensUsed     Int?     // Optional token count for cost tracking
+
+  conversation AIConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
+
+model AIInsight {
+  id         String   @id @default(cuid())
+  userId     String
+  date       DateTime @default(now())
+  insight    String   // AI-generated insight text
+  strategies String   // JSON array of suggested strategies
+  pattern    String?  // Identified pattern (optional)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model Strategy {
+  id           String    @id @default(cuid())
+  userId       String
+  name         String
+  category     String    // physical, mental, social, creative, professional
+  description  String
+  timesUsed    Int       @default(0)
+  timesHelpful Int       @default(0)
+  lastUsed     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model MascotCustomization {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  outfit    String   // JSON: { hat: 'item_id', glasses: 'item_id', ... }
+  decor     String   // JSON: { pot: 'item_id', fence: 'item_id', ... }
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
