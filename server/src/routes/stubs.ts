@@ -4,23 +4,9 @@ import { authenticateJWT } from '../middleware/auth.js';
 const router = Router();
 
 /**
- * Phase 2/3 Stub Routes
+ * Phase 3 Stub Routes
  * These return 200 OK with "Not Implemented" messages
  */
-
-// Phase 2: Store
-router.get('/store', authenticateJWT, (req, res) => {
-  res.json({ message: 'Not Implemented', phase: 2, feature: 'store', items: [] });
-});
-
-router.post('/store/purchase', authenticateJWT, (req, res) => {
-  res.json({ message: 'Not Implemented', phase: 2, feature: 'store-purchase' });
-});
-
-// Phase 2: Inventory
-router.get('/inventory', authenticateJWT, (req, res) => {
-  res.json({ message: 'Not Implemented', phase: 2, feature: 'inventory', items: [] });
-});
 
 // Phase 3: AI/LLM integration
 router.post('/ai/message', authenticateJWT, (req, res) => {

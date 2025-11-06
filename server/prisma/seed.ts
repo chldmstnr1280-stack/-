@@ -52,11 +52,27 @@ async function main() {
 
   console.log('✅ Created 7 sample emotion entries');
 
-  // Add some shop items (Phase 2 stub)
+  // Add shop items (Phase 2)
   const shopItems = [
+    // Outfits
     { key: 'hat-party', title: 'Party Hat', type: 'outfit', price: 50 },
-    { key: 'plant-pot', title: 'Ceramic Pot', type: 'decor', price: 30 },
-    { key: 'boost-energy', title: 'Energy Boost', type: 'boost', price: 10 },
+    { key: 'hat-wizard', title: 'Wizard Hat', type: 'outfit', price: 100 },
+    { key: 'hat-flower', title: 'Flower Crown', type: 'outfit', price: 75 },
+    { key: 'glasses-cool', title: 'Cool Sunglasses', type: 'outfit', price: 60 },
+    { key: 'scarf-cozy', title: 'Cozy Scarf', type: 'outfit', price: 40 },
+
+    // Decor
+    { key: 'pot-ceramic', title: 'Ceramic Pot', type: 'decor', price: 30 },
+    { key: 'pot-gold', title: 'Golden Pot', type: 'decor', price: 150 },
+    { key: 'fence-white', title: 'White Fence', type: 'decor', price: 45 },
+    { key: 'bench-wooden', title: 'Wooden Bench', type: 'decor', price: 80 },
+    { key: 'lamp-garden', title: 'Garden Lamp', type: 'decor', price: 90 },
+    { key: 'fountain-mini', title: 'Mini Fountain', type: 'decor', price: 120 },
+
+    // Boosts
+    { key: 'boost-energy', title: 'Energy Boost', type: 'boost', price: 20 },
+    { key: 'boost-calm', title: 'Calm Boost', type: 'boost', price: 20 },
+    { key: 'boost-growth', title: 'Growth Accelerator', type: 'boost', price: 35 },
   ];
 
   for (const item of shopItems) {
@@ -67,7 +83,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Created shop items (Phase 2 stub)');
+  console.log(`✅ Created ${shopItems.length} shop items`);
 
   console.log('🎉 Seeding complete!');
 }

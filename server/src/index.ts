@@ -14,6 +14,8 @@ import mascotRoutes from './routes/mascot.js';
 import reportRoutes from './routes/report.js';
 import stepRoutes from './routes/steps.js';
 import cycleRoutes from './routes/cycle.js';
+import storeRoutes from './routes/store.js';
+import inventoryRoutes from './routes/inventory.js';
 import stubRoutes from './routes/stubs.js';
 
 // Load environment variables
@@ -42,7 +44,9 @@ app.use('/mascot', mascotRoutes);
 app.use('/report', reportRoutes);
 app.use('/steps', stepRoutes); // Phase 2: Step tracking
 app.use('/cycle', cycleRoutes); // Phase 2: Cycle tracking
-app.use('/', stubRoutes); // Phase 2/3 remaining stubs
+app.use('/store', storeRoutes); // Phase 2: Store
+app.use('/inventory', inventoryRoutes); // Phase 2: Inventory
+app.use('/', stubRoutes); // Phase 3 remaining stubs
 
 // OpenAPI Documentation
 try {
