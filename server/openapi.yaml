@@ -1,0 +1,281 @@
+openapi: 3.0.3
+info:
+  title: SELLERY API
+  version: 1.0.0
+  description: Emotional routine app with mascot growth system
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    EmotionEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        emotionLabel:
+          type: string
+        intensity:
+          type: integer
+          minimum: 0
+          maximum: 10
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    MascotResponse:
+      type: object
+      properties:
+        stage:
+          type: string
+          enum: [seed, sprout, kid]
+        score:
+          type: integer
+        message:
+          type: string
+
+    WeeklyStats:
+      type: object
+      properties:
+        avgIntensity:
+          type: number
+        topEmotions:
+          type: array
+          items:
+            type: object
+            properties:
+              emotion:
+                type: string
+              count:
+                type: integer
+        daysLogged:
+          type: integer
+        dailyTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              avgIntensity:
+                type: number
+              count:
+                type: integer
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Server is healthy
+
+  /auth/magic-link:
+    post:
+      summary: Request magic link for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Magic link generated
+        '400':
+          description: Invalid request
+
+  /auth/callback:
+    post:
+      summary: Verify magic link and get JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid token
+
+  /me:
+    get:
+      summary: Get current user profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /emotion:
+    post:
+      summary: Create emotion entry
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - emotionLabel
+                - intensity
+              properties:
+                emotionLabel:
+                  type: string
+                intensity:
+                  type: integer
+                  minimum: 0
+                  maximum: 10
+                notes:
+                  type: string
+                tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        '201':
+          description: Entry created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmotionEntry'
+
+    get:
+      summary: Get emotion entries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: List of emotion entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EmotionEntry'
+
+  /mascot/today:
+    get:
+      summary: Get current mascot state
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Mascot state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MascotResponse'
+
+  /report/weekly:
+    get:
+      summary: Get weekly statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Weekly stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyStats'
+
+  /steps:
+    post:
+      summary: Log step count (Phase 2 stub)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Not implemented
+
+  /cycle:
+    post:
+      summary: Log cycle data (Phase 2 stub)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Not implemented
+
+  /store:
+    get:
+      summary: Get store items (Phase 2 stub)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Not implemented
+
+  /ai/message:
+    post:
+      summary: Send message to AI (Phase 3 stub)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Not implemented

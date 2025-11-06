@@ -1,0 +1,95 @@
+// Prisma Schema for SELLERY Phase 1
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Core Models (Phase 1)
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+
+  emotionEntries EmotionEntry[]
+  mascotState    MascotState?
+
+  // Phase 2/3 stubs
+  stepLogs   StepLog[]
+  cycleLogs  CycleLog[]
+  inventory  Inventory[]
+}
+
+model EmotionEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  timestamp     DateTime @default(now())
+  emotionLabel  String   // e.g., "happy", "anxious", "sad", "excited"
+  intensity     Int      // 0-10 scale
+  notes         String?
+  tags          String   // JSON array stored as string
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+}
+
+model MascotState {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  stage     String   @default("seed") // "seed" | "sprout" | "kid"
+  score     Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Phase 2 Stubs (minimal schema, not implemented)
+
+model StepLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime @default(now())
+  stepCount Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model CycleLog {
+  id     String   @id @default(cuid())
+  userId String
+  date   DateTime @default(now())
+  phase  String?  // Optional cycle phase
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model ShopItem {
+  id    String @id @default(cuid())
+  key   String @unique
+  title String
+  type  String // "outfit" | "decor" | "boost"
+  price Int
+
+  inventory Inventory[]
+}
+
+model Inventory {
+  id      String   @id @default(cuid())
+  userId  String
+  itemId  String
+  ownedAt DateTime @default(now())
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item ShopItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, itemId])
+}

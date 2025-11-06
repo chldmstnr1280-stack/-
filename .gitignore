@@ -22,3 +22,28 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage/
+*.lcov
+
+# Expo
+.expo/
+.expo-shared/
+
+# Server specific
+server/prisma/*.db
+server/prisma/*.db-journal
+server/dist/
+
+# App specific
+app/.expo/
+app/dist/
+
+# Build artifacts
+*.tsbuildinfo
