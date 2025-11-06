@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: SELLERY API
-  version: 1.0.0
-  description: Emotional routine app with mascot growth system
+  version: 2.0.0
+  description: Emotional routine app with mascot growth system (Phase 1 & 2 Complete)
 
 servers:
   - url: http://localhost:3000
@@ -88,6 +88,97 @@ components:
                 type: number
               count:
                 type: integer
+
+    # Phase 2 Schemas
+    StepLog:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        date:
+          type: string
+          format: date-time
+        stepCount:
+          type: integer
+
+    CycleLog:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        date:
+          type: string
+          format: date-time
+        phase:
+          type: string
+          enum: [menstrual, follicular, ovulation, luteal]
+          nullable: true
+
+    ShopItem:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+          enum: [outfit, decor, boost]
+        price:
+          type: integer
+
+    Inventory:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        itemId:
+          type: string
+        purchasedAt:
+          type: string
+          format: date-time
+        item:
+          $ref: '#/components/schemas/ShopItem'
+
+    WeeklyStepStats:
+      type: object
+      properties:
+        totalSteps:
+          type: integer
+        avgStepsPerDay:
+          type: number
+        daysWithSteps:
+          type: integer
+        dailySteps:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              stepCount:
+                type: integer
+
+    CycleInsights:
+      type: object
+      properties:
+        currentPhase:
+          type: string
+          nullable: true
+        avgIntensityByPhase:
+          type: object
+        commonEmotionsByPhase:
+          type: object
+        totalCycleDays:
+          type: integer
 
 paths:
   /health:
@@ -244,36 +335,298 @@ paths:
               schema:
                 $ref: '#/components/schemas/WeeklyStats'
 
+  # Phase 2: Step Tracking
   /steps:
     post:
-      summary: Log step count (Phase 2 stub)
+      summary: Log daily step count
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - stepCount
+              properties:
+                stepCount:
+                  type: integer
+                  minimum: 0
+                date:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Step count logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StepLog'
+
+    get:
+      summary: Get step history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Step history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StepLog'
+
+  /steps/today:
+    get:
+      summary: Get today's step count
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Not implemented
+          description: Today's steps
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  stepCount:
+                    type: integer
 
+  /steps/weekly:
+    get:
+      summary: Get weekly step statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Weekly step stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeeklyStepStats'
+
+  # Phase 2: Cycle Tracking
   /cycle:
     post:
-      summary: Log cycle data (Phase 2 stub)
+      summary: Log menstrual cycle phase
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [menstrual, follicular, ovulation, luteal]
+                  nullable: true
+                date:
+                  type: string
+                  format: date-time
+      responses:
+        '201':
+          description: Cycle logged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleLog'
+
+    get:
+      summary: Get cycle history
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Cycle history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CycleLog'
+
+  /cycle/current:
+    get:
+      summary: Get current cycle phase
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Not implemented
+          description: Current phase
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  phase:
+                    type: string
+                    nullable: true
 
+  /cycle/insights:
+    get:
+      summary: Get emotion correlation insights
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cycle insights
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CycleInsights'
+
+  # Phase 2: Store & Inventory
   /store:
     get:
-      summary: Get store items (Phase 2 stub)
+      summary: Browse shop items
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [outfit, decor, boost]
+      responses:
+        '200':
+          description: Shop items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ShopItem'
+
+  /store/purchase:
+    post:
+      summary: Purchase an item
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - itemId
+              properties:
+                itemId:
+                  type: string
+      responses:
+        '200':
+          description: Purchase successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  inventory:
+                    $ref: '#/components/schemas/Inventory'
+        '400':
+          description: Insufficient points or already owned
+
+  /store/points:
+    get:
+      summary: Get available points
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User's points
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  points:
+                    type: integer
+
+  /inventory:
+    get:
+      summary: Get user's inventory
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: User inventory
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Inventory'
+
+  /inventory/stats:
+    get:
+      summary: Get purchase statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Purchase stats
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalItems:
+                    type: integer
+                  totalSpent:
+                    type: integer
+                  itemsByType:
+                    type: object
+
+  # Phase 3 Stubs
+  /ai/message:
+    post:
+      summary: Send message to AI (Phase 3 - Not Implemented)
       security:
         - bearerAuth: []
       responses:
         '200':
           description: Not implemented
 
-  /ai/message:
-    post:
-      summary: Send message to AI (Phase 3 stub)
+  /outfits:
+    get:
+      summary: Get outfit rendering data (Phase 3 - Not Implemented)
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Not implemented
+
+  /decor:
+    get:
+      summary: Get decor rendering data (Phase 3 - Not Implemented)
       security:
         - bearerAuth: []
       responses:
