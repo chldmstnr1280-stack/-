@@ -30,6 +30,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="tracking"
+        options={{
+          title: 'Track',
+          tabBarIcon: () => <></>,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
         name="report"
         options={{
           title: 'Report',
