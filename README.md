@@ -144,6 +144,8 @@ npx react-native run-android
 
 - [PRD 검증 체크리스트](docs/PRD_VALIDATION.md) - ✅ 100% 충족
 - [API 문서](docs/API_DOCUMENTATION.md)
+- [실행 가이드](docs/GETTING_STARTED.md)
+- [Windows 설정 가이드](docs/WINDOWS_SETUP.md) - 🪟 Windows 전용
 
 ---
 
