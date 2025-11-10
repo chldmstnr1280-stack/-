@@ -15,6 +15,7 @@ import Day1EmotionLog from '../screens/onboarding/Day1EmotionLog';
 import Day2ActivitySync from '../screens/onboarding/Day2ActivitySync';
 import Day3Routine from '../screens/onboarding/Day3Routine';
 import Day5CheckIn from '../screens/onboarding/Day5CheckIn';
+import Day7Completion from '../screens/onboarding/Day7Completion';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
@@ -33,7 +34,7 @@ const OnboardingNavigator: React.FC = () => {
       <Stack.Screen name="Day2ActivitySync" component={Day2ActivitySync} />
       <Stack.Screen name="Day3Routine" component={Day3Routine} />
       <Stack.Screen name="Day5CheckIn" component={Day5CheckIn} />
-      {/* TODO: Add Day 7 screen */}
+      <Stack.Screen name="Day7Completion" component={Day7Completion} />
     </Stack.Navigator>
   );
 };

@@ -112,8 +112,7 @@ const Day5CheckIn: React.FC<Props> = ({ navigation }) => {
 
   const handleComplete = () => {
     setCurrentDay(7);
-    // TODO: Navigate to Day7 when implemented
-    Alert.alert('완료', 'Day 7 화면은 아직 구현중입니다.\n\n온보딩이 거의 완료되었어요!');
+    navigation.navigate('Day7Completion');
   };
 
   const selectedValue = currentSurvey.responses.find(
