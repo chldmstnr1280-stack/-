@@ -81,9 +81,6 @@ const Day7Completion: React.FC<Props> = ({ navigation }) => {
   ];
 
   const handleStartApp = () => {
-    // 온보딩 완료 처리
-    setIsComplete(true);
-
     Alert.alert(
       '🎉 환영합니다!',
       '이제 본격적으로 셀리와 함께\n마음 돌봄 여정을 시작해요!',
@@ -91,11 +88,8 @@ const Day7Completion: React.FC<Props> = ({ navigation }) => {
         {
           text: '시작하기',
           onPress: () => {
-            // TODO: Navigate to Main App when implemented
-            Alert.alert(
-              '준비 중',
-              '메인 앱 화면은 아직 구현중입니다.\n\n온보딩 완료를 축하드려요!'
-            );
+            // 온보딩 완료 처리 - RootNavigator가 자동으로 Main으로 전환
+            setIsComplete(true);
           },
         },
       ]
