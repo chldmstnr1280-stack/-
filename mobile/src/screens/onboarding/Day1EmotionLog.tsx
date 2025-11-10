@@ -102,8 +102,7 @@ const Day1EmotionLog: React.FC<Props> = ({ navigation }) => {
           {
             text: '확인',
             onPress: () => {
-              // TODO: Navigate to Day2ActivitySync when implemented
-              Alert.alert('완료', 'Day 2 화면은 아직 구현중입니다.');
+              navigation.navigate('Day2ActivitySync');
             },
           },
         ]
@@ -113,8 +112,7 @@ const Day1EmotionLog: React.FC<Props> = ({ navigation }) => {
         {
           text: '확인',
           onPress: () => {
-            // TODO: Navigate to next screen
-            Alert.alert('완료', 'Day 2 화면은 아직 구현중입니다.');
+            navigation.navigate('Day2ActivitySync');
           },
         },
       ]);
