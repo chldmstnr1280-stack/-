@@ -16,6 +16,7 @@ import {
 import { OnboardingScreenProps } from '../../navigation/types';
 import { OnboardingStep } from '../../types/onboarding';
 import { useOnboardingStore } from '../../store/onboardingStore';
+import { useSellyStore } from '../../store/sellyStore';
 import { SellyStyle } from '../../types/selly';
 
 type Props = OnboardingScreenProps<'SellyStylePicker'>;
@@ -58,6 +59,7 @@ const STYLE_OPTIONS: StyleOption[] = [
 
 const SellyStylePicker: React.FC<Props> = ({ navigation }) => {
   const { completeStep, setCurrentDay } = useOnboardingStore();
+  const { setStyle } = useSellyStore();
   const [selectedStyle, setSelectedStyle] = useState<SellyStyle | null>(null);
 
   const handleComplete = () => {
@@ -66,16 +68,15 @@ const SellyStylePicker: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
-    // TODO: Save selly style to store
+    // Save selly style to store
+    setStyle(selectedStyle);
     console.log('Selected selly style:', selectedStyle);
 
     completeStep(OnboardingStep.SELLY_STYLE_PICKER);
     setCurrentDay(1);
 
-    // TODO: Navigate to Day1EmotionLog when implemented
-    Alert.alert('완료! 🎉', 'Day 0 온보딩이 완료되었습니다.\nDay 1 화면은 아직 구현중입니다.', [
-      { text: '확인' },
-    ]);
+    // Navigate to Day 1
+    navigation.navigate('Day1EmotionLog');
   };
 
   const renderStyleOption = (option: StyleOption) => {

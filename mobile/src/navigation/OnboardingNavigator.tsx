@@ -11,6 +11,7 @@ import Day0Welcome from '../screens/onboarding/Day0Welcome';
 import ProfileSetup from '../screens/onboarding/ProfileSetup';
 import GardenIntro from '../screens/onboarding/GardenIntro';
 import SellyStylePicker from '../screens/onboarding/SellyStylePicker';
+import Day1EmotionLog from '../screens/onboarding/Day1EmotionLog';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
@@ -25,7 +26,8 @@ const OnboardingNavigator: React.FC = () => {
       <Stack.Screen name="ProfileSetup" component={ProfileSetup} />
       <Stack.Screen name="GardenIntro" component={GardenIntro} />
       <Stack.Screen name="SellyStylePicker" component={SellyStylePicker} />
-      {/* TODO: Add Day 1-7 screens */}
+      <Stack.Screen name="Day1EmotionLog" component={Day1EmotionLog} />
+      {/* TODO: Add Day 2-7 screens */}
     </Stack.Navigator>
   );
 };
