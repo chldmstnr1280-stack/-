@@ -90,8 +90,7 @@ const Day2ActivitySync: React.FC<Props> = ({ navigation }) => {
           onPress: () => {
             completeStep(OnboardingStep.ACTIVITY_SYNC);
             setCurrentDay(3);
-            // TODO: Navigate to Day3 when implemented
-            Alert.alert('완료', 'Day 3 화면은 아직 구현중입니다.');
+            navigation.navigate('Day3Routine');
           },
         },
       ]
@@ -116,8 +115,7 @@ const Day2ActivitySync: React.FC<Props> = ({ navigation }) => {
         {
           text: '확인',
           onPress: () => {
-            // TODO: Navigate to Day3 when implemented
-            Alert.alert('완료', 'Day 3 화면은 아직 구현중입니다.');
+            navigation.navigate('Day3Routine');
           },
         },
       ]
