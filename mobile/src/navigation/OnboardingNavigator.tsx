@@ -14,6 +14,7 @@ import SellyStylePicker from '../screens/onboarding/SellyStylePicker';
 import Day1EmotionLog from '../screens/onboarding/Day1EmotionLog';
 import Day2ActivitySync from '../screens/onboarding/Day2ActivitySync';
 import Day3Routine from '../screens/onboarding/Day3Routine';
+import Day5CheckIn from '../screens/onboarding/Day5CheckIn';
 
 const Stack = createNativeStackNavigator<OnboardingStackParamList>();
 
@@ -31,7 +32,8 @@ const OnboardingNavigator: React.FC = () => {
       <Stack.Screen name="Day1EmotionLog" component={Day1EmotionLog} />
       <Stack.Screen name="Day2ActivitySync" component={Day2ActivitySync} />
       <Stack.Screen name="Day3Routine" component={Day3Routine} />
-      {/* TODO: Add Day 5, 7 screens */}
+      <Stack.Screen name="Day5CheckIn" component={Day5CheckIn} />
+      {/* TODO: Add Day 7 screen */}
     </Stack.Navigator>
   );
 };

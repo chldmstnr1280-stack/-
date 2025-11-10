@@ -95,8 +95,7 @@ const Day3Routine: React.FC<Props> = ({ navigation }) => {
             text: '확인',
             onPress: () => {
               setCurrentDay(5);
-              // TODO: Navigate to Day 5 when implemented
-              Alert.alert('완료', 'Day 5 화면은 아직 구현중입니다.');
+              navigation.navigate('Day5CheckIn');
             },
           },
         ]
@@ -107,8 +106,7 @@ const Day3Routine: React.FC<Props> = ({ navigation }) => {
           text: '확인',
           onPress: () => {
             setCurrentDay(5);
-            // TODO: Navigate to Day 5 when implemented
-            Alert.alert('완료', 'Day 5 화면은 아직 구현중입니다.');
+            navigation.navigate('Day5CheckIn');
           },
         },
       ]);
@@ -134,7 +132,7 @@ const Day3Routine: React.FC<Props> = ({ navigation }) => {
               text: '확인',
               onPress: () => {
                 setCurrentDay(5);
-                Alert.alert('완료', 'Day 5 화면은 아직 구현중입니다.');
+                navigation.navigate('Day5CheckIn');
               },
             },
           ]
@@ -145,7 +143,7 @@ const Day3Routine: React.FC<Props> = ({ navigation }) => {
             text: '확인',
             onPress: () => {
               setCurrentDay(5);
-              Alert.alert('완료', 'Day 5 화면은 아직 구현중입니다.');
+              navigation.navigate('Day5CheckIn');
             },
           },
         ]);
