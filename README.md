@@ -146,6 +146,7 @@ npx react-native run-android
 - [API 문서](docs/API_DOCUMENTATION.md)
 - [실행 가이드](docs/GETTING_STARTED.md)
 - [Windows 설정 가이드](docs/WINDOWS_SETUP.md) - 🪟 Windows 전용
+- [Web (PWA) 설정 가이드](docs/WEB_SETUP.md) - 🌐 **브라우저에서 바로 실행!**
 
 ---
 
