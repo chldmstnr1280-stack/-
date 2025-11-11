@@ -1,20 +1,22 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Heart, Activity } from 'lucide-react';
+import { Plus, Heart, Activity, User, BarChart3 } from 'lucide-react';
 import { Layout, Card, Button } from '../../components/common';
 import { SellyCharacter, SellyStats } from '../../components/selly';
 import { useUserStore } from '../../store/userStore';
 import { useSellyStore } from '../../store/sellyStore';
 import { useEmotionStore } from '../../store/emotionStore';
 import { useRoutineStore } from '../../store/routineStore';
+import { useGamificationStore } from '../../store/gamificationStore';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
   const { user, onboardingProgress } = useUserStore();
   const { selly } = useSellyStore();
-  const { getTodayEmotions } = useEmotionStore();
+  const { getTodayEmotions, emotions } = useEmotionStore();
   const { initializeRoutines, routines } = useRoutineStore();
+  const { level } = useGamificationStore();
 
   useEffect(() => {
     initializeRoutines();
@@ -75,7 +77,7 @@ export const HomePage: React.FC = () => {
         )}
 
         {/* 빠른 액션 */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <motion.div
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -109,6 +111,44 @@ export const HomePage: React.FC = () => {
                 <h3 className="font-semibold text-gray-800 mb-1">루틴 시작</h3>
                 <p className="text-xs text-gray-600">
                   {routines.length}개 루틴 가능
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Card
+              hoverable
+              onClick={() => navigate('/profile')}
+              className="cursor-pointer"
+            >
+              <div className="text-center py-4">
+                <User className="w-12 h-12 mx-auto mb-3 text-purple-500" />
+                <h3 className="font-semibold text-gray-800 mb-1">프로필</h3>
+                <p className="text-xs text-gray-600">
+                  레벨 {level}
+                </p>
+              </div>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Card
+              hoverable
+              onClick={() => navigate('/report')}
+              className="cursor-pointer"
+            >
+              <div className="text-center py-4">
+                <BarChart3 className="w-12 h-12 mx-auto mb-3 text-blue-500" />
+                <h3 className="font-semibold text-gray-800 mb-1">주간 리포트</h3>
+                <p className="text-xs text-gray-600">
+                  {emotions.length}개 기록
                 </p>
               </div>
             </Card>

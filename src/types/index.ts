@@ -119,3 +119,20 @@ export interface OnboardingProgress {
   missions: OnboardingMission[];
   completedDays: number[];
 }
+
+// 주간 체크인 질문
+export interface CheckInQuestion {
+  id: string;
+  question: string;
+  type: 'phq9' | 'gad7';
+}
+
+// 주간 체크인 응답
+export interface CheckInResponse {
+  id: string;
+  userId: string;
+  date: Date;
+  responses: { questionId: string; score: number }[];
+  totalScore: number;
+  type: 'phq9' | 'gad7';
+}

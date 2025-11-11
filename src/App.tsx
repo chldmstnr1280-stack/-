@@ -6,6 +6,11 @@ import { useUserStore } from './store/userStore';
 import { Welcome, NameInput, StyleSelect, Complete } from './pages/Onboarding';
 import { HomePage } from './pages/Home';
 import { EmotionLogPage } from './pages/EmotionLog';
+import { RoutinesPage, RoutineExecutePage } from './pages/Routines';
+import { CheckInPage, CheckInResultPage } from './pages/CheckIn';
+import { EvolutionCompletePage } from './pages/Evolution';
+import { ProfilePage } from './pages/Profile';
+import { ReportPage } from './pages/Report';
 
 const App: React.FC = () => {
   const { user } = useUserStore();
@@ -27,6 +32,34 @@ const App: React.FC = () => {
         <Route
           path="/emotion/log"
           element={user ? <EmotionLogPage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/routines"
+          element={user ? <RoutinesPage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/routines/:routineId"
+          element={user ? <RoutineExecutePage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/checkin"
+          element={user ? <CheckInPage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/checkin/result"
+          element={user ? <CheckInResultPage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/evolution/complete"
+          element={user ? <EvolutionCompletePage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/profile"
+          element={user ? <ProfilePage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/report"
+          element={user ? <ReportPage /> : <Navigate to="/" replace />}
         />
 
         {/* 404 - 기본 리다이렉트 */}
