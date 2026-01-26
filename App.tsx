@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { GoogleGenAI } from "@google/genai";
-import { ContentType, ContentTemplate, GeneratedContent, UserUsage, FREE_DAILY_LIMIT, PRO_PRICE } from './types';
+import { ContentType, ContentTemplate, GeneratedContent, UserUsage, FREE_DAILY_LIMIT, PRO_PRICE, STRIPE_CONFIG } from './types';
 import { CONTENT_TEMPLATES, getPromptForType } from './constants';
 
 // --- Usage Management ---
@@ -105,9 +105,34 @@ const TemplateCard: React.FC<TemplateCardProps> = ({ template, isSelected, onCli
 interface PricingModalProps {
   onClose: () => void;
   onUpgrade: () => void;
+  onTestUpgrade: () => void;
 }
 
-const PricingModal: React.FC<PricingModalProps> = ({ onClose, onUpgrade }) => {
+const CreditCardIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+  </svg>
+);
+
+const ShieldIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+  </svg>
+);
+
+const PricingModal: React.FC<PricingModalProps> = ({ onClose, onUpgrade, onTestUpgrade }) => {
+  const isStripeConfigured = STRIPE_CONFIG.paymentLink !== 'YOUR_STRIPE_PAYMENT_LINK_HERE';
+
+  const handlePayment = () => {
+    if (isStripeConfigured) {
+      // 실제 Stripe Payment Link로 이동
+      const successUrl = encodeURIComponent(window.location.origin + '?' + STRIPE_CONFIG.successParam);
+      window.location.href = `${STRIPE_CONFIG.paymentLink}?success_url=${successUrl}`;
+    } else {
+      onUpgrade();
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-slate-800 rounded-2xl max-w-lg w-full p-6 relative">
@@ -130,13 +155,13 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onUpgrade }) => {
             <span className="text-4xl font-bold text-white">${PRO_PRICE}</span>
             <span className="text-slate-400">/월</span>
           </div>
-          <p className="text-center text-slate-500 text-sm mt-2">100명 유료 고객 = 월 $999 수익</p>
+          <p className="text-center text-slate-500 text-sm mt-2">언제든 취소 가능 | 환불 보장</p>
         </div>
 
         <ul className="space-y-3 mb-6">
           {[
             '무제한 콘텐츠 생성',
-            '모든 템플릿 사용',
+            '모든 템플릿 10개 사용',
             '우선 생성 속도',
             '히스토리 무제한 저장',
             '신규 템플릿 우선 제공',
@@ -151,15 +176,31 @@ const PricingModal: React.FC<PricingModalProps> = ({ onClose, onUpgrade }) => {
         </ul>
 
         <button
-          onClick={onUpgrade}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold transition-all"
+          onClick={handlePayment}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold transition-all flex items-center justify-center gap-2"
         >
-          Pro 시작하기
+          <CreditCardIcon />
+          {isStripeConfigured ? '카드로 결제하기' : 'Pro 시작하기'}
         </button>
 
-        <p className="text-center text-slate-500 text-xs mt-4">
-          Stripe 연동 후 실제 결제가 활성화됩니다
-        </p>
+        <div className="flex items-center justify-center gap-2 mt-4 text-slate-500 text-xs">
+          <ShieldIcon />
+          <span>Stripe 보안 결제 | SSL 암호화</span>
+        </div>
+
+        {!isStripeConfigured && (
+          <div className="mt-4 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-amber-400 text-xs text-center">
+              <strong>개발 모드:</strong> types.ts에서 STRIPE_CONFIG.paymentLink를 설정하세요
+            </p>
+            <button
+              onClick={onTestUpgrade}
+              className="w-full mt-2 py-2 rounded-lg bg-amber-500/20 text-amber-400 text-sm hover:bg-amber-500/30 transition-colors"
+            >
+              테스트용 Pro 활성화
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -224,6 +265,107 @@ const ResultPanel: React.FC<ResultPanelProps> = ({ content, isLoading, onCopy, c
   );
 };
 
+// --- Subscription Management Modal ---
+interface SubscriptionModalProps {
+  usage: UserUsage;
+  onClose: () => void;
+  onCancel: () => void;
+}
+
+const SubscriptionModal: React.FC<SubscriptionModalProps> = ({ usage, onClose, onCancel }) => {
+  const isStripeConfigured = STRIPE_CONFIG.customerPortal !== 'YOUR_STRIPE_CUSTOMER_PORTAL_HERE';
+
+  const handleManageSubscription = () => {
+    if (isStripeConfigured) {
+      window.location.href = STRIPE_CONFIG.customerPortal;
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800 rounded-2xl max-w-md w-full p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 mb-4">
+            <SparklesIcon />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Pro 구독 관리</h2>
+        </div>
+
+        <div className="bg-slate-900 rounded-xl p-4 mb-6 space-y-3">
+          <div className="flex justify-between">
+            <span className="text-slate-400">플랜</span>
+            <span className="text-violet-400 font-semibold">Pro</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-slate-400">월 요금</span>
+            <span className="text-white">${PRO_PRICE}/월</span>
+          </div>
+          {usage.proStartDate && (
+            <div className="flex justify-between">
+              <span className="text-slate-400">시작일</span>
+              <span className="text-white">{new Date(usage.proStartDate).toLocaleDateString('ko-KR')}</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span className="text-slate-400">총 생성</span>
+            <span className="text-white">{usage.totalGenerated}개</span>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {isStripeConfigured ? (
+            <button
+              onClick={handleManageSubscription}
+              className="w-full py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold transition-all"
+            >
+              Stripe에서 구독 관리
+            </button>
+          ) : (
+            <button
+              onClick={onCancel}
+              className="w-full py-3 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-400 font-semibold transition-all"
+            >
+              구독 취소 (테스트)
+            </button>
+          )}
+        </div>
+
+        <p className="text-center text-slate-500 text-xs mt-4">
+          구독 취소 시 현재 결제 기간 끝까지 사용 가능
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// --- Payment Success Banner ---
+const PaymentSuccessBanner: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => (
+  <div className="fixed top-0 left-0 right-0 bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 px-4 z-50">
+    <div className="max-w-6xl mx-auto flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+          <CheckIcon />
+        </div>
+        <div>
+          <p className="font-semibold">결제 완료! Pro 플랜이 활성화되었습니다</p>
+          <p className="text-sm text-green-100">모든 템플릿을 무제한으로 사용하세요</p>
+        </div>
+      </div>
+      <button onClick={onDismiss} className="text-white/80 hover:text-white">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+  </div>
+);
+
 // --- Main App ---
 
 const App: React.FC = () => {
@@ -237,7 +379,26 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<GeneratedContent[]>(loadHistory);
   const [showPricing, setShowPricing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
+  const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for payment success on URL
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('payment') === 'success') {
+      // Payment successful - activate Pro
+      setUsage(prev => ({
+        ...prev,
+        isPro: true,
+        proStartDate: new Date().toISOString(),
+      }));
+      setShowPaymentSuccess(true);
+      setView('app');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   useEffect(() => {
     saveUsage(usage);
@@ -302,10 +463,31 @@ const App: React.FC = () => {
   };
 
   const handleUpgrade = () => {
-    // Stripe integration placeholder
-    setUsage(prev => ({ ...prev, isPro: true }));
+    // Stripe Payment Link가 설정되지 않은 경우
+    // 실제로는 Stripe Payment Link로 리다이렉트됨
     setShowPricing(false);
-    alert('Pro 활성화됨! (실제 앱에서는 Stripe 결제 후 활성화)');
+  };
+
+  const handleTestUpgrade = () => {
+    // 테스트용 Pro 활성화
+    setUsage(prev => ({
+      ...prev,
+      isPro: true,
+      proStartDate: new Date().toISOString(),
+    }));
+    setShowPricing(false);
+    setShowPaymentSuccess(true);
+  };
+
+  const handleCancelSubscription = () => {
+    if (confirm('정말 구독을 취소하시겠습니까?')) {
+      setUsage(prev => ({
+        ...prev,
+        isPro: false,
+        proStartDate: undefined,
+      }));
+      setShowSubscription(false);
+    }
   };
 
   const handleTemplateSelect = (template: ContentTemplate) => {
@@ -510,7 +692,13 @@ const App: React.FC = () => {
 
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800">
               {usage.isPro ? (
-                <span className="text-sm text-violet-400 font-medium">Pro</span>
+                <button
+                  onClick={() => setShowSubscription(true)}
+                  className="text-sm text-violet-400 font-medium hover:text-violet-300 flex items-center gap-1"
+                >
+                  <SparklesIcon />
+                  Pro
+                </button>
               ) : (
                 <>
                   <span className="text-sm text-slate-400">오늘 남은 횟수:</span>
@@ -628,9 +816,27 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Payment Success Banner */}
+      {showPaymentSuccess && (
+        <PaymentSuccessBanner onDismiss={() => setShowPaymentSuccess(false)} />
+      )}
+
       {/* Pricing Modal */}
       {showPricing && (
-        <PricingModal onClose={() => setShowPricing(false)} onUpgrade={handleUpgrade} />
+        <PricingModal
+          onClose={() => setShowPricing(false)}
+          onUpgrade={handleUpgrade}
+          onTestUpgrade={handleTestUpgrade}
+        />
+      )}
+
+      {/* Subscription Management Modal */}
+      {showSubscription && (
+        <SubscriptionModal
+          usage={usage}
+          onClose={() => setShowSubscription(false)}
+          onCancel={handleCancelSubscription}
+        />
       )}
     </div>
   );

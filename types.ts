@@ -34,7 +34,26 @@ export interface UserUsage {
   lastResetDate: string;
   isPro: boolean;
   totalGenerated: number;
+  proStartDate?: string;
+  stripeCustomerId?: string;
 }
 
 export const FREE_DAILY_LIMIT = 5;
 export const PRO_PRICE = 9.99;
+
+// Stripe Configuration
+// 1. Stripe Dashboard에서 Payment Link 생성
+// 2. 아래 URL을 실제 Payment Link로 교체
+// 3. success_url에 ?payment=success 파라미터 추가
+export const STRIPE_CONFIG = {
+  // Stripe Payment Link URL (Dashboard에서 생성)
+  // 예: https://buy.stripe.com/xxxxx
+  paymentLink: 'YOUR_STRIPE_PAYMENT_LINK_HERE',
+
+  // Customer Portal URL (구독 관리용)
+  // Stripe Dashboard > Settings > Customer Portal에서 설정
+  customerPortal: 'YOUR_STRIPE_CUSTOMER_PORTAL_HERE',
+
+  // 결제 성공 시 리다이렉트될 URL 파라미터
+  successParam: 'payment=success',
+};
