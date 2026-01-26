@@ -1,246 +1,637 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { GoogleGenAI } from "@google/genai";
+import { ContentType, ContentTemplate, GeneratedContent, UserUsage, FREE_DAILY_LIMIT, PRO_PRICE } from './types';
+import { CONTENT_TEMPLATES, getPromptForType } from './constants';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { GoogleGenAI, Chat } from "@google/genai";
-import { Role, Message } from './types';
-import { SOCRATES_SYSTEM_PROMPT } from './constants';
+// --- Usage Management ---
+const getStorageKey = (key: string) => `copygenius_${key}`;
 
-// --- Helper Components (defined outside main App to prevent re-creation on render) ---
+const loadUsage = (): UserUsage => {
+  const stored = localStorage.getItem(getStorageKey('usage'));
+  const today = new Date().toDateString();
 
-const SocratesIcon: React.FC = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    className="w-8 h-8 rounded-full bg-slate-500 p-1 text-white"
-  >
-    <path
-      fillRule="evenodd"
-      d="M12.528 1.472a.75.75 0 01.005 1.06l-7.5 7.5a.75.75 0 01-1.06 0l-1.5-1.5a.75.75 0 111.06-1.06l.97.97L11.473 1.477a.75.75 0 011.055-.005zM19.028 1.472a.75.75 0 01.005 1.06l-7.5 7.5a.75.75 0 01-1.06 0l-1.5-1.5a.75.75 0 111.06-1.06l.97.97L18.473 1.477a.75.75 0 011.055-.005zM9.528 11.472a.75.75 0 01.005 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-1.5-1.5a.75.75 0 111.06-1.06l.97.97L8.473 11.477a.75.75 0 011.055-.005zm9.505 0a.75.75 0 01.005 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-1.5-1.5a.75.75 0 111.06-1.06l.97.97L17.978 11.477a.75.75 0 011.055-.005z"
-      clipRule="evenodd"
-    />
-    <path
-      d="M4.5 1.5a.75.75 0 00-1.5 0v11.25a.75.75 0 001.5 0V1.5zM21 1.5a.75.75 0 00-1.5 0v11.25a.75.75 0 001.5 0V1.5zM12.75 2.25a.75.75 0 00-1.5 0v9.75a.75.75 0 001.5 0V2.25z"
-    />
-    <path
-      fillRule="evenodd"
-      d="M3 14.25a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75zm0 3.75a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75zM3 21.75a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75z"
-      clipRule="evenodd"
-    />
+  if (stored) {
+    const usage = JSON.parse(stored) as UserUsage;
+    if (usage.lastResetDate !== today) {
+      return { dailyCount: 0, lastResetDate: today, isPro: usage.isPro, totalGenerated: usage.totalGenerated };
+    }
+    return usage;
+  }
+
+  return { dailyCount: 0, lastResetDate: today, isPro: false, totalGenerated: 0 };
+};
+
+const saveUsage = (usage: UserUsage) => {
+  localStorage.setItem(getStorageKey('usage'), JSON.stringify(usage));
+};
+
+const loadHistory = (): GeneratedContent[] => {
+  const stored = localStorage.getItem(getStorageKey('history'));
+  return stored ? JSON.parse(stored) : [];
+};
+
+const saveHistory = (history: GeneratedContent[]) => {
+  localStorage.setItem(getStorageKey('history'), JSON.stringify(history.slice(0, 50)));
+};
+
+// --- Icons ---
+const SparklesIcon = () => (
+  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
   </svg>
 );
 
-interface MessageProps {
-  message: Message;
-}
-
-const MessageBubble: React.FC<MessageProps> = ({ message }) => {
-  const isUser = message.role === Role.USER;
-  const alignment = isUser ? 'justify-end' : 'justify-start';
-  const bgColor = isUser ? 'bg-blue-600' : 'bg-slate-700';
-  const textColor = 'text-white';
-
-  return (
-    <div className={`flex ${alignment} mb-4`}>
-      {!isUser && (
-        <div className="flex-shrink-0 mr-3">
-          <SocratesIcon />
-        </div>
-      )}
-      <div className={`max-w-prose px-4 py-3 rounded-lg ${bgColor} ${textColor} whitespace-pre-wrap`}>
-        {message.text}
-      </div>
-    </div>
-  );
-};
-
-const LoadingBubble: React.FC = () => (
-  <div className="flex justify-start mb-4">
-    <div className="flex-shrink-0 mr-3">
-      <SocratesIcon />
-    </div>
-    <div className="max-w-prose px-4 py-3 rounded-lg bg-slate-700 text-white flex items-center space-x-2">
-      <span className="sr-only">Thinking...</span>
-      <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-      <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-      <div className="h-2 w-2 bg-slate-400 rounded-full animate-bounce"></div>
-    </div>
-  </div>
+const CopyIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+  </svg>
 );
 
-interface ChatInputProps {
-  onSendMessage: (message: string) => void;
-  isLoading: boolean;
+const CheckIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+  </svg>
+);
+
+const HistoryIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+// --- Components ---
+
+interface TemplateCardProps {
+  template: ContentTemplate;
+  isSelected: boolean;
+  onClick: () => void;
+  isPro: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
-  const [input, setInput] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.trim() && !isLoading) {
-      onSendMessage(input.trim());
-      setInput('');
-    }
-  };
+const TemplateCard: React.FC<TemplateCardProps> = ({ template, isSelected, onClick, isPro }) => {
+  const isLocked = template.isPro && !isPro;
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 bg-slate-800/80 backdrop-blur-sm">
-      <div className="flex items-center bg-slate-700 rounded-full p-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="소크라테스에게 질문하세요..."
-          className="flex-grow bg-transparent text-white placeholder-slate-400 focus:outline-none px-4"
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="bg-blue-600 text-white rounded-full p-2 disabled:bg-slate-500 disabled:cursor-not-allowed hover:bg-blue-500 transition-colors"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="w-5 h-5"
-          >
-            <path d="M3.105 3.105a.75.75 0 011.06 0L10 8.94l5.835-5.836a.75.75 0 111.06 1.06L11.06 10l5.835 5.835a.75.75 0 11-1.06 1.06L10 11.06l-5.835 5.835a.75.75 0 01-1.06-1.06L8.94 10 3.105 4.165a.75.75 0 010-1.06z" clipRule="evenodd" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M3.105 16.895a.75.75 0 01-1.06-1.06L8.94 10 3.105 4.165a.75.75 0 011.06-1.06L10 8.94l5.835-5.836a.75.75 0 111.06 1.06L11.06 10l5.835 5.835a.75.75 0 11-1.06 1.06L10 11.06l-5.835 5.835zM3.5 10a6.5 6.5 0 1113 0 6.5 6.5 0 01-13 0z" opacity="0" />
-            <path d="M10 2.5a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM2.5 10a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16z" opacity="0" />
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" opacity="0" />
-            <path d="M.5 9.5a.5.5 0 01.5-.5h18a.5.5 0 010 1H1a.5.5 0 01-.5-.5z" transform="rotate(90 10 10)" opacity="0" />
-            <path d="M3.22 3.22a.5.5 0 01.707 0l12.86 12.86a.5.5 0 01-.707.707L3.22 3.927a.5.5 0 010-.707z" opacity="0" />
-            <path d="M16.78 3.22a.5.5 0 01.707.707L4.627 16.78a.5.5 0 01-.707-.707L16.78 3.22z" opacity="0" />
-            <path d="M2.5 10a.5.5 0 01.5-.5h14a.5.5 0 010 1h-14a.5.5 0 01-.5-.5z" opacity="0" />
-            <path d="M2.5 10a.5.5 0 01.5-.5h14a.5.5 0 010 1h-14a.5.5 0 01-.5-.5z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm-5.5-8a.5.5 0 01.5-.5h10a.5.5 0 010 1H5a.5.5 0 01-.5-.5z" opacity="0" />
-            <path d="M2.969 10a.5.5 0 01.5-.5h13.062a.5.5 0 110 1H3.469a.5.5 0 01-.5-.5z" opacity="0" />
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707a1 1 0 00-1.414-1.414L10 10.586 7.707 8.293a1 1 0 00-1.414 1.414L8.586 12l-2.293 2.293a1 1 0 101.414 1.414L10 13.414l2.293 2.293a1 1 0 001.414-1.414L11.414 12l2.293-2.293z" clipRule="evenodd" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.707-11.707a1 1 0 00-1.414 1.414L9.586 10l-1.707 1.707a1 1 0 101.414 1.414L11 11.414l1.707 1.707a1 1 0 101.414-1.414L12.414 10l1.707-1.707a1 1 0 00-1.414-1.414L11 8.586 9.293 6.293z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.707-11.707a1 1 0 00-1.414 1.414L9.586 10l-1.707 1.707a1 1 0 101.414 1.414L11 11.414l1.707 1.707a1 1 0 101.414-1.414L12.414 10l1.707-1.707a1 1 0 00-1.414-1.414L11 8.586 9.293 6.293z" opacity="0" />
-            <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.707-11.707a1 1 0 00-1.414 1.414L9.586 10l-1.707 1.707a1 1 0 101.414 1.414L11 11.414l1.707 1.707a1 1 0 101.414-1.414L12.414 10l1.707-1.707a1 1 0 00-1.414-1.414L11 8.586 9.293 6.293z" opacity="0" />
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.75-11.25a.75.75 0 00-1.5 0v2.5h-2.5a.75.75 0 000 1.5h2.5v2.5a.75.75 0 001.5 0v-2.5h2.5a.75.75 0 000-1.5h-2.5v-2.5z" clipRule="evenodd" opacity="0" />
-             <path d="M15.964 10c0 .339-.033.67-.095.992a.75.75 0 01-1.41.598A7.502 7.502 0 0015.498 10c0-.42-.04-.83-.112-1.23a.75.75 0 111.432-.444A8.963 8.963 0 0115.964 10zM10 15.964c.339 0 .67-.033.992-.095a.75.75 0 01.598 1.41A8.962 8.962 0 0110 18c-.42 0-.83-.04-1.23-.112a.75.75 0 01.444-1.432A7.502 7.502 0 0010 15.964zM4.036 10c0-.339.033-.67.095-.992a.75.75 0 011.41-.598A7.502 7.502 0 004.502 10c0 .42.04.83.112 1.23a.75.75 0 11-1.432.444A8.963 8.963 0 014.036 10zM10 4.036c-.339 0-.67.033-.992.095a.75.75 0 01-.598-1.41A8.962 8.962 0 0110 2c.42 0 .83.04 1.23.112a.75.75 0 01-.444 1.432A7.502 7.502 0 0010 4.036z" opacity="0" />
-             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.03-8.22a.75.75 0 010-1.06l3-3a.75.75 0 111.06 1.06l-1.72 1.72h3.14a.75.75 0 010 1.5H8.72l1.72 1.72a.75.75 0 11-1.06 1.06l-3-3.001z" clipRule="evenodd" transform="rotate(45 10 10)" />
-          </svg>
-        </button>
-      </div>
-    </form>
+    <button
+      onClick={onClick}
+      disabled={isLocked}
+      className={`
+        relative p-4 rounded-xl border-2 text-left transition-all duration-200
+        ${isSelected
+          ? 'border-violet-500 bg-violet-500/10 shadow-lg shadow-violet-500/20'
+          : 'border-slate-700 bg-slate-800/50 hover:border-slate-600 hover:bg-slate-800'
+        }
+        ${isLocked ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+      `}
+    >
+      {isLocked && (
+        <div className="absolute top-2 right-2 bg-amber-500/20 text-amber-400 px-2 py-1 rounded-full text-xs flex items-center gap-1">
+          <LockIcon /> PRO
+        </div>
+      )}
+      <div className="text-2xl mb-2">{template.icon}</div>
+      <h3 className="font-semibold text-white">{template.nameKo}</h3>
+      <p className="text-sm text-slate-400 mt-1">{template.description}</p>
+    </button>
   );
 };
 
-// --- Main App Component ---
+interface PricingModalProps {
+  onClose: () => void;
+  onUpgrade: () => void;
+}
+
+const PricingModal: React.FC<PricingModalProps> = ({ onClose, onUpgrade }) => {
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800 rounded-2xl max-w-lg w-full p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 mb-4">
+            <SparklesIcon />
+          </div>
+          <h2 className="text-2xl font-bold text-white">CopyGenius Pro</h2>
+          <p className="text-slate-400 mt-2">무제한 AI 콘텐츠 생성</p>
+        </div>
+
+        <div className="bg-slate-900 rounded-xl p-6 mb-6">
+          <div className="flex items-baseline justify-center gap-1">
+            <span className="text-4xl font-bold text-white">${PRO_PRICE}</span>
+            <span className="text-slate-400">/월</span>
+          </div>
+          <p className="text-center text-slate-500 text-sm mt-2">100명 유료 고객 = 월 $999 수익</p>
+        </div>
+
+        <ul className="space-y-3 mb-6">
+          {[
+            '무제한 콘텐츠 생성',
+            '모든 템플릿 사용',
+            '우선 생성 속도',
+            '히스토리 무제한 저장',
+            '신규 템플릿 우선 제공',
+          ].map((feature, i) => (
+            <li key={i} className="flex items-center gap-3 text-slate-300">
+              <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-500/20 text-green-400 flex items-center justify-center">
+                <CheckIcon />
+              </div>
+              {feature}
+            </li>
+          ))}
+        </ul>
+
+        <button
+          onClick={onUpgrade}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold transition-all"
+        >
+          Pro 시작하기
+        </button>
+
+        <p className="text-center text-slate-500 text-xs mt-4">
+          Stripe 연동 후 실제 결제가 활성화됩니다
+        </p>
+      </div>
+    </div>
+  );
+};
+
+interface ResultPanelProps {
+  content: string;
+  isLoading: boolean;
+  onCopy: () => void;
+  copied: boolean;
+}
+
+const ResultPanel: React.FC<ResultPanelProps> = ({ content, isLoading, onCopy, copied }) => {
+  if (isLoading) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-violet-500/20 mb-4">
+            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+          <p className="text-slate-400">AI가 콘텐츠를 생성 중입니다...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!content) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center text-slate-500">
+          <SparklesIcon />
+          <p className="mt-4">템플릿을 선택하고<br />주제를 입력하세요</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-white">생성 결과</h3>
+        <button
+          onClick={onCopy}
+          className={`
+            flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all
+            ${copied
+              ? 'bg-green-500/20 text-green-400'
+              : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+            }
+          `}
+        >
+          {copied ? <CheckIcon /> : <CopyIcon />}
+          {copied ? '복사됨!' : '복사'}
+        </button>
+      </div>
+      <div className="flex-1 overflow-y-auto bg-slate-900 rounded-xl p-4">
+        <div className="prose prose-invert prose-sm max-w-none whitespace-pre-wrap">
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Main App ---
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: Role.MODEL,
-      text: "만나서 반갑네, 젊은 사상가여. 나는 소크라테스일세. \n자네의 마음속에는 어떤 질문이 맴돌고 있는가? 함께 탐구해 보세.",
-    },
-  ]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const chatSessionRef = useRef<Chat | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const [view, setView] = useState<'landing' | 'app'>('landing');
+  const [selectedTemplate, setSelectedTemplate] = useState<ContentTemplate | null>(null);
+  const [input, setInput] = useState('');
+  const [generatedContent, setGeneratedContent] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [usage, setUsage] = useState<UserUsage>(loadUsage);
+  const [history, setHistory] = useState<GeneratedContent[]>(loadHistory);
+  const [showPricing, setShowPricing] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  const initializeChat = useCallback(async () => {
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-      const chat = ai.chats.create({
-        model: 'gemini-2.5-flash',
-        config: {
-          systemInstruction: SOCRATES_SYSTEM_PROMPT,
-        },
-      });
-      chatSessionRef.current = chat;
-    } catch (error) {
-      console.error("Failed to initialize Gemini chat:", error);
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: Role.MODEL,
-          text: "오류가 발생하여 대화를 시작할 수 없네. 페이지를 새로고침 해보게.",
-        },
-      ]);
-    }
-  }, []);
+    saveUsage(usage);
+  }, [usage]);
 
   useEffect(() => {
-    initializeChat();
-  }, [initializeChat]);
+    saveHistory(history);
+  }, [history]);
 
-  const handleSendMessage = async (text: string) => {
-    if (!chatSessionRef.current) {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: Role.MODEL,
-          text: "대화 세션이 아직 준비되지 않았네. 잠시 후 다시 시도해보게.",
-        },
-      ]);
+  const remainingGenerations = usage.isPro ? Infinity : FREE_DAILY_LIMIT - usage.dailyCount;
+
+  const handleGenerate = useCallback(async () => {
+    if (!selectedTemplate || !input.trim()) return;
+
+    if (!usage.isPro && usage.dailyCount >= FREE_DAILY_LIMIT) {
+      setShowPricing(true);
       return;
     }
 
-    const userMessage: Message = { role: Role.USER, text };
-    setMessages((prev) => [...prev, userMessage]);
     setIsLoading(true);
+    setError(null);
+    setGeneratedContent('');
 
     try {
-      const response = await chatSessionRef.current.sendMessage({ message: text });
-      const modelMessage: Message = { role: Role.MODEL, text: response.text };
-      setMessages((prev) => [...prev, modelMessage]);
-    } catch (error) {
-      console.error("Error sending message to Gemini:", error);
-      const errorMessage: Message = {
-        role: Role.MODEL,
-        text: "흠, 생각의 흐름에 문제가 생긴 듯하네. 다시 질문해주겠나?",
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+      const prompt = getPromptForType(selectedTemplate.id, input);
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+
+      const result = response.text || '';
+      setGeneratedContent(result);
+
+      const newContent: GeneratedContent = {
+        id: Date.now().toString(),
+        type: selectedTemplate.id,
+        input,
+        output: result,
+        createdAt: new Date(),
       };
-      setMessages((prev) => [...prev, errorMessage]);
+
+      setHistory(prev => [newContent, ...prev]);
+      setUsage(prev => ({
+        ...prev,
+        dailyCount: prev.dailyCount + 1,
+        totalGenerated: prev.totalGenerated + 1,
+      }));
+    } catch (err) {
+      setError('콘텐츠 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
+  }, [selectedTemplate, input, usage]);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedContent);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleUpgrade = () => {
+    // Stripe integration placeholder
+    setUsage(prev => ({ ...prev, isPro: true }));
+    setShowPricing(false);
+    alert('Pro 활성화됨! (실제 앱에서는 Stripe 결제 후 활성화)');
+  };
+
+  const handleTemplateSelect = (template: ContentTemplate) => {
+    if (template.isPro && !usage.isPro) {
+      setShowPricing(true);
+      return;
+    }
+    setSelectedTemplate(template);
+    setInput('');
+    setGeneratedContent('');
+  };
+
+  // --- Landing Page ---
+  if (view === 'landing') {
+    return (
+      <div className="min-h-screen bg-slate-900 text-white">
+        {/* Hero */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 via-transparent to-fuchsia-600/20" />
+          <div className="absolute inset-0">
+            <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-violet-500/30 rounded-full blur-3xl" />
+            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-500/30 rounded-full blur-3xl" />
+          </div>
+
+          <nav className="relative z-10 max-w-6xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                <SparklesIcon />
+              </div>
+              <span className="font-bold text-xl">CopyGenius</span>
+            </div>
+            <button
+              onClick={() => setView('app')}
+              className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              시작하기
+            </button>
+          </nav>
+
+          <div className="relative z-10 max-w-4xl mx-auto px-6 py-24 text-center">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/20 text-violet-300 text-sm mb-6">
+              <SparklesIcon /> AI 기반 마케팅 카피
+            </div>
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
+              AI가 만드는<br />매출 올리는 카피
+            </h1>
+            <p className="text-xl text-slate-400 mb-8 max-w-2xl mx-auto">
+              블로그, SNS, 광고, 이메일까지. 전환율 높은 마케팅 콘텐츠를
+              10초 만에 생성하세요.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <button
+                onClick={() => setView('app')}
+                className="px-8 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-semibold text-lg transition-all shadow-lg shadow-violet-500/25"
+              >
+                무료로 시작하기
+              </button>
+              <span className="text-slate-500">매일 5회 무료</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Templates Preview */}
+        <div className="max-w-6xl mx-auto px-6 py-24">
+          <h2 className="text-3xl font-bold text-center mb-4">10가지 콘텐츠 템플릿</h2>
+          <p className="text-slate-400 text-center mb-12">모든 마케팅 채널을 커버하는 AI 템플릿</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            {CONTENT_TEMPLATES.map(template => (
+              <div
+                key={template.id}
+                className="p-4 rounded-xl bg-slate-800/50 border border-slate-700 text-center"
+              >
+                <div className="text-3xl mb-2">{template.icon}</div>
+                <div className="font-medium text-sm">{template.nameKo}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Pricing */}
+        <div className="max-w-6xl mx-auto px-6 py-24">
+          <h2 className="text-3xl font-bold text-center mb-4">심플한 가격</h2>
+          <p className="text-slate-400 text-center mb-12">필요한 만큼만 사용하세요</p>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+            {/* Free */}
+            <div className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
+              <h3 className="text-xl font-semibold mb-2">Free</h3>
+              <div className="flex items-baseline gap-1 mb-4">
+                <span className="text-4xl font-bold">$0</span>
+                <span className="text-slate-400">/월</span>
+              </div>
+              <ul className="space-y-3 mb-6">
+                {['매일 5회 생성', '기본 템플릿 5개', '히스토리 10개 저장'].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-slate-300">
+                    <CheckIcon /> {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => setView('app')}
+                className="w-full py-3 rounded-xl border border-slate-600 hover:bg-slate-700 transition-colors"
+              >
+                시작하기
+              </button>
+            </div>
+
+            {/* Pro */}
+            <div className="p-6 rounded-2xl bg-gradient-to-br from-violet-900/50 to-fuchsia-900/50 border border-violet-500/50 relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500 text-xs font-semibold">
+                BEST VALUE
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Pro</h3>
+              <div className="flex items-baseline gap-1 mb-4">
+                <span className="text-4xl font-bold">${PRO_PRICE}</span>
+                <span className="text-slate-400">/월</span>
+              </div>
+              <ul className="space-y-3 mb-6">
+                {['무제한 생성', '모든 템플릿 10개', '히스토리 무제한', '우선 처리 속도', '신규 기능 우선 제공'].map((f, i) => (
+                  <li key={i} className="flex items-center gap-2 text-slate-300">
+                    <CheckIcon /> {f}
+                  </li>
+                ))}
+              </ul>
+              <button
+                onClick={() => { setView('app'); setShowPricing(true); }}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-semibold transition-all"
+              >
+                Pro 시작하기
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Revenue Calculator */}
+        <div className="max-w-6xl mx-auto px-6 py-24">
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700">
+            <h2 className="text-2xl font-bold text-center mb-8">수익 계산기</h2>
+            <div className="grid md:grid-cols-3 gap-8 text-center">
+              <div>
+                <div className="text-5xl font-bold text-violet-400">100명</div>
+                <div className="text-slate-400 mt-2">월간 유료 고객</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold text-fuchsia-400">${PRO_PRICE}</div>
+                <div className="text-slate-400 mt-2">월 구독료</div>
+              </div>
+              <div>
+                <div className="text-5xl font-bold text-green-400">$999</div>
+                <div className="text-slate-400 mt-2">월 수익</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="max-w-6xl mx-auto px-6 py-24 text-center">
+          <h2 className="text-3xl font-bold mb-4">지금 시작하세요</h2>
+          <p className="text-slate-400 mb-8">신용카드 없이 무료로 시작</p>
+          <button
+            onClick={() => setView('app')}
+            className="px-8 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 font-semibold text-lg transition-all"
+          >
+            무료로 시작하기
+          </button>
+        </div>
+
+        {/* Footer */}
+        <footer className="border-t border-slate-800 py-8">
+          <div className="max-w-6xl mx-auto px-6 text-center text-slate-500 text-sm">
+            <p>CopyGenius - AI 마케팅 카피 생성기</p>
+            <p className="mt-2">Stripe 연동으로 실제 결제 수익화 가능</p>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // --- App View ---
   return (
-    <div className="flex flex-col h-screen font-sans text-slate-200 bg-slate-900">
-      <header className="p-4 text-center border-b border-slate-700 shadow-lg bg-slate-800">
-        <h1 className="text-2xl font-bold text-white">Neuro-City</h1>
-        <p className="text-sm text-slate-400">소크라테스와의 대화</p>
+    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+      {/* Header */}
+      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setView('landing')} className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                <SparklesIcon />
+              </div>
+              <span className="font-bold">CopyGenius</span>
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sm"
+            >
+              <HistoryIcon />
+              히스토리
+            </button>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800">
+              {usage.isPro ? (
+                <span className="text-sm text-violet-400 font-medium">Pro</span>
+              ) : (
+                <>
+                  <span className="text-sm text-slate-400">오늘 남은 횟수:</span>
+                  <span className={`font-bold ${remainingGenerations <= 1 ? 'text-red-400' : 'text-green-400'}`}>
+                    {remainingGenerations}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {!usage.isPro && (
+              <button
+                onClick={() => setShowPricing(true)}
+                className="px-4 py-1.5 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-sm font-medium"
+              >
+                Pro 업그레이드
+              </button>
+            )}
+          </div>
+        </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
-        <div className="max-w-4xl mx-auto">
-          {messages.map((msg, index) => (
-            <MessageBubble key={index} message={msg} />
-          ))}
-          {isLoading && <LoadingBubble />}
-          <div ref={messagesEndRef} />
+      {/* Main Content */}
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
+        <div className="grid lg:grid-cols-2 gap-6 h-full">
+          {/* Left: Template Selection */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-semibold mb-4">템플릿 선택</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {CONTENT_TEMPLATES.map(template => (
+                  <TemplateCard
+                    key={template.id}
+                    template={template}
+                    isSelected={selectedTemplate?.id === template.id}
+                    onClick={() => handleTemplateSelect(template)}
+                    isPro={usage.isPro}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {selectedTemplate && (
+              <div className="space-y-4">
+                <h2 className="text-lg font-semibold">{selectedTemplate.icon} {selectedTemplate.nameKo}</h2>
+                <textarea
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder={selectedTemplate.placeholder}
+                  className="w-full h-32 p-4 rounded-xl bg-slate-800 border border-slate-700 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 outline-none resize-none text-white placeholder-slate-500"
+                />
+                <button
+                  onClick={handleGenerate}
+                  disabled={!input.trim() || isLoading}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed font-semibold transition-all flex items-center justify-center gap-2"
+                >
+                  <SparklesIcon />
+                  {isLoading ? '생성 중...' : '콘텐츠 생성하기'}
+                </button>
+                {error && (
+                  <p className="text-red-400 text-sm text-center">{error}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Right: Results */}
+          <div className="bg-slate-800/50 rounded-2xl border border-slate-700 p-6 min-h-[500px]">
+            <ResultPanel
+              content={generatedContent}
+              isLoading={isLoading}
+              onCopy={handleCopy}
+              copied={copied}
+            />
+          </div>
         </div>
       </main>
 
-      <footer className="sticky bottom-0">
-        <div className="max-w-4xl mx-auto">
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+      {/* History Sidebar */}
+      {showHistory && (
+        <div className="fixed inset-y-0 right-0 w-96 bg-slate-800 border-l border-slate-700 shadow-2xl z-50 flex flex-col">
+          <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+            <h3 className="font-semibold">생성 히스토리</h3>
+            <button onClick={() => setShowHistory(false)} className="text-slate-400 hover:text-white">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            {history.length === 0 ? (
+              <p className="text-slate-500 text-center py-8">히스토리가 없습니다</p>
+            ) : (
+              history.map(item => {
+                const template = CONTENT_TEMPLATES.find(t => t.id === item.type);
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setGeneratedContent(item.output);
+                      setShowHistory(false);
+                    }}
+                    className="w-full p-3 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-left"
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span>{template?.icon}</span>
+                      <span className="font-medium text-sm">{template?.nameKo}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 truncate">{item.input}</p>
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
-      </footer>
+      )}
+
+      {/* Pricing Modal */}
+      {showPricing && (
+        <PricingModal onClose={() => setShowPricing(false)} onUpgrade={handleUpgrade} />
+      )}
     </div>
   );
 };

@@ -1,7 +1,8 @@
 {
-  "name": "neuro-city:-chat-with-socrates",
+  "name": "copygenius-ai",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "AI Marketing Copy Generator - Generate high-converting marketing content in seconds",
   "type": "module",
   "scripts": {
     "dev": "vite",
