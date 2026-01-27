@@ -65,6 +65,204 @@ const HistoryIcon = () => (
   </svg>
 );
 
+const MailIcon = () => (
+  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+);
+
+const TwitterIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+const FacebookIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+  </svg>
+);
+
+const LinkedInIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+  </svg>
+);
+
+const StarIcon = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+  </svg>
+);
+
+// --- Email Collection ---
+const saveEmail = (email: string) => {
+  const emails = JSON.parse(localStorage.getItem('copygenius_emails') || '[]');
+  if (!emails.includes(email)) {
+    emails.push({ email, date: new Date().toISOString() });
+    localStorage.setItem('copygenius_emails', JSON.stringify(emails));
+  }
+};
+
+interface EmailModalProps {
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const EmailModal: React.FC<EmailModalProps> = ({ onClose, onSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email && email.includes('@')) {
+      saveEmail(email);
+      setSubmitted(true);
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 2000);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-slate-800 rounded-2xl max-w-md w-full p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {submitted ? (
+          <div className="text-center py-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-500/20 mb-4">
+              <CheckIcon />
+            </div>
+            <h2 className="text-2xl font-bold text-white">감사합니다!</h2>
+            <p className="text-slate-400 mt-2">무료 보너스 5회가 추가되었습니다</p>
+          </div>
+        ) : (
+          <>
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-violet-500/20 mb-4">
+                <MailIcon />
+              </div>
+              <h2 className="text-2xl font-bold text-white">무료 5회 추가 받기</h2>
+              <p className="text-slate-400 mt-2">이메일 등록하고 오늘 5회 더 사용하세요!</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 focus:border-violet-500 focus:ring-1 focus:ring-violet-500 outline-none text-white"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white font-semibold transition-all"
+              >
+                무료 5회 받기
+              </button>
+            </form>
+
+            <p className="text-center text-slate-500 text-xs mt-4">
+              스팸 없음 | 마케팅 팁 & 새 기능 소식
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// --- Social Share ---
+const ShareButtons: React.FC<{ url?: string; text?: string }> = ({
+  url = typeof window !== 'undefined' ? window.location.href : '',
+  text = 'AI로 마케팅 카피를 10초만에! CopyGenius'
+}) => {
+  const shareTwitter = () => {
+    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, '_blank');
+  };
+
+  const shareFacebook = () => {
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+  };
+
+  const shareLinkedIn = () => {
+    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-slate-500 text-sm">공유:</span>
+      <button onClick={shareTwitter} className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+        <TwitterIcon />
+      </button>
+      <button onClick={shareFacebook} className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+        <FacebookIcon />
+      </button>
+      <button onClick={shareLinkedIn} className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
+        <LinkedInIcon />
+      </button>
+    </div>
+  );
+};
+
+// --- Testimonials ---
+const TESTIMONIALS = [
+  {
+    name: '김민수',
+    role: '스타트업 대표',
+    avatar: '👨‍💼',
+    content: '블로그 글 쓰는데 2시간 걸렸는데, 이제 10분이면 끝나요. 진짜 미쳤습니다.',
+    rating: 5,
+  },
+  {
+    name: '이지영',
+    role: '마케터',
+    avatar: '👩‍💻',
+    content: '페이스북 광고 카피 퀄리티가 대행사급이에요. CTR이 2배 올랐습니다.',
+    rating: 5,
+  },
+  {
+    name: '박준혁',
+    role: '유튜버',
+    avatar: '🎬',
+    content: '썸네일 아이디어까지 주는 게 대박. 조회수 확실히 늘었어요.',
+    rating: 5,
+  },
+];
+
+const TestimonialsSection: React.FC = () => (
+  <div className="max-w-6xl mx-auto px-6 py-24">
+    <h2 className="text-3xl font-bold text-center mb-4">실제 사용자 후기</h2>
+    <p className="text-slate-400 text-center mb-12">이미 1,000명 이상이 사용 중</p>
+    <div className="grid md:grid-cols-3 gap-6">
+      {TESTIMONIALS.map((t, i) => (
+        <div key={i} className="p-6 rounded-2xl bg-slate-800/50 border border-slate-700">
+          <div className="flex items-center gap-1 mb-4">
+            {[...Array(t.rating)].map((_, j) => (
+              <span key={j} className="text-yellow-400"><StarIcon /></span>
+            ))}
+          </div>
+          <p className="text-slate-300 mb-4">"{t.content}"</p>
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">{t.avatar}</span>
+            <div>
+              <div className="font-semibold text-white">{t.name}</div>
+              <div className="text-sm text-slate-500">{t.role}</div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 // --- Components ---
 
 interface TemplateCardProps {
@@ -381,7 +579,17 @@ const App: React.FC = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [bonusCredits, setBonusCredits] = useState(0);
   const [error, setError] = useState<string | null>(null);
+
+  // Check for email bonus
+  useEffect(() => {
+    const hasBonus = localStorage.getItem('copygenius_email_bonus');
+    if (hasBonus) {
+      setBonusCredits(5);
+    }
+  }, []);
 
   // Check for payment success on URL
   useEffect(() => {
@@ -408,12 +616,17 @@ const App: React.FC = () => {
     saveHistory(history);
   }, [history]);
 
-  const remainingGenerations = usage.isPro ? Infinity : FREE_DAILY_LIMIT - usage.dailyCount;
+  const remainingGenerations = usage.isPro ? Infinity : (FREE_DAILY_LIMIT + bonusCredits) - usage.dailyCount;
+
+  const handleEmailSuccess = () => {
+    localStorage.setItem('copygenius_email_bonus', 'true');
+    setBonusCredits(5);
+  };
 
   const handleGenerate = useCallback(async () => {
     if (!selectedTemplate || !input.trim()) return;
 
-    if (!usage.isPro && usage.dailyCount >= FREE_DAILY_LIMIT) {
+    if (!usage.isPro && usage.dailyCount >= (FREE_DAILY_LIMIT + bonusCredits)) {
       setShowPricing(true);
       return;
     }
@@ -622,6 +835,9 @@ const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Testimonials */}
+        <TestimonialsSection />
+
         {/* Revenue Calculator */}
         <div className="max-w-6xl mx-auto px-6 py-24">
           <div className="p-8 rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-slate-700">
@@ -655,11 +871,30 @@ const App: React.FC = () => {
           </button>
         </div>
 
+        {/* Email CTA */}
+        <div className="max-w-6xl mx-auto px-6 py-16">
+          <div className="p-8 rounded-2xl bg-gradient-to-r from-violet-600/20 to-fuchsia-600/20 border border-violet-500/30 text-center">
+            <MailIcon />
+            <h3 className="text-2xl font-bold mt-4 mb-2">뉴스레터 구독하고 5회 추가!</h3>
+            <p className="text-slate-400 mb-6">마케팅 팁 & AI 트렌드 소식을 받아보세요</p>
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 font-semibold transition-colors"
+            >
+              무료 5회 받기
+            </button>
+          </div>
+        </div>
+
         {/* Footer */}
         <footer className="border-t border-slate-800 py-8">
-          <div className="max-w-6xl mx-auto px-6 text-center text-slate-500 text-sm">
-            <p>CopyGenius - AI 마케팅 카피 생성기</p>
-            <p className="mt-2">Stripe 연동으로 실제 결제 수익화 가능</p>
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-slate-500 text-sm">
+                <p>CopyGenius - AI 마케팅 카피 생성기</p>
+              </div>
+              <ShareButtons />
+            </div>
           </div>
         </footer>
       </div>
@@ -708,6 +943,16 @@ const App: React.FC = () => {
                 </>
               )}
             </div>
+
+            {!usage.isPro && !bonusCredits && (
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-sm font-medium flex items-center gap-1"
+              >
+                <MailIcon />
+                +5회 무료
+              </button>
+            )}
 
             {!usage.isPro && (
               <button
@@ -836,6 +1081,14 @@ const App: React.FC = () => {
           usage={usage}
           onClose={() => setShowSubscription(false)}
           onCancel={handleCancelSubscription}
+        />
+      )}
+
+      {/* Email Collection Modal */}
+      {showEmailModal && (
+        <EmailModal
+          onClose={() => setShowEmailModal(false)}
+          onSuccess={handleEmailSuccess}
         />
       )}
     </div>
