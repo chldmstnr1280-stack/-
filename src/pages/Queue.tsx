@@ -1,3 +1,4 @@
+import { DisplayLink } from '../components/ui';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Bell, Info, Monitor, RefreshCw, X } from 'lucide-react';
@@ -129,9 +130,9 @@ export default function QueuePage() {
           <li>📺 탈의실 공용 디스플레이에 호출 번호만 표시돼요 (이름·전화번호 비공개).</li>
           <li>📢 차례가 되면 세신대에서 번호를 호출해요.</li>
         </ul>
-        <a href={`#/display/queue/${bath.id}`} target="_blank" rel="noreferrer" className="mt-3 flex items-center justify-center gap-1.5 rounded-2xl bg-cream py-2.5 font-semibold">
+        <DisplayLink to={`/display/queue/${bath.id}`} className="mt-3 flex items-center justify-center gap-1.5 rounded-2xl bg-cream py-2.5 font-semibold">
           <Monitor className="h-4 w-4" /> 공용 대기 디스플레이 열기
-        </a>
+        </DisplayLink>
       </Card>
 
       {q.log.length > 0 && (

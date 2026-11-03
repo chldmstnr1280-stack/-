@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
-import { HashRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { HashRouter, MemoryRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { StoreProvider } from './store';
-import { BottomNav, ToastProvider } from './components/ui';
+import { BottomNav, IS_ARTIFACT, ToastProvider } from './components/ui';
+
+// 아티팩트 뷰어는 #/경로 해시를 지원하지 않으므로 메모리 라우터 사용
+const Router = IS_ARTIFACT ? MemoryRouter : HashRouter;
 import { DemoGuide } from './components/DemoGuide';
 import Home from './pages/Home';
 import SearchPage from './pages/Search';
@@ -40,7 +43,7 @@ function ConsumerLayout() {
 
 export default function App() {
   return (
-    <HashRouter>
+    <Router>
       <StoreProvider>
         <ToastProvider>
           <ScrollTop />
@@ -69,6 +72,6 @@ export default function App() {
           </Routes>
         </ToastProvider>
       </StoreProvider>
-    </HashRouter>
+    </Router>
   );
 }

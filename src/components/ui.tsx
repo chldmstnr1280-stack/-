@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ButtonHTMLAttributes, type ReactNode } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Bell, CalendarCheck, ChevronLeft, Flame, Heart, Home, Search, User, X } from 'lucide-react';
 import { crowd, won } from '../lib/logic';
 import { useStore } from '../store';
@@ -412,5 +412,23 @@ export function EmptyState({ title, body, action }: { title: string; body?: stri
       {body && <p className="mt-1 text-sm text-brown-soft">{body}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
+  );
+}
+
+/* ---------------- 디스플레이 링크 ---------------- */
+// 일반 웹앱에서는 새 탭(같은 브라우저 탭 간 실시간 연동), 아티팩트 뷰어에서는 같은 화면 안에서 이동
+export const IS_ARTIFACT = import.meta.env.VITE_ARTIFACT === '1';
+
+export function DisplayLink({ to, className, children }: { to: string; className?: string; children: ReactNode }) {
+  if (IS_ARTIFACT)
+    return (
+      <Link to={to} className={className}>
+        {children}
+      </Link>
+    );
+  return (
+    <a href={`#${to}`} target="_blank" rel="noreferrer" className={className}>
+      {children}
+    </a>
   );
 }

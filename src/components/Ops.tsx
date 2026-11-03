@@ -1,3 +1,4 @@
+import { DisplayLink } from './ui';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, Home, Monitor, Play, Plus, RotateCcw, CheckCircle2, PauseCircle, Undo2 } from 'lucide-react';
@@ -126,9 +127,9 @@ export function QueueControl({ bathId }: { bathId: string }) {
             <button className={`${btn} min-h-[34px] bg-cream text-xs`} onClick={() => actions.addWalkIn(bathId)}>
               <Plus className="h-3.5 w-3.5" /> 현장 번호표 발급
             </button>
-            <a href={`#/display/queue/${bathId}`} target="_blank" rel="noreferrer" className={`${btn} min-h-[34px] bg-cream text-xs`}>
+            <DisplayLink to={`/display/queue/${bathId}`} className={`${btn} min-h-[34px] bg-cream text-xs`}>
               <Monitor className="h-3.5 w-3.5" /> 공용 화면
-            </a>
+            </DisplayLink>
           </div>
         </div>
         {waiting.length ? (

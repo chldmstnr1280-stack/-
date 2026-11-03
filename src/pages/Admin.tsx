@@ -1,3 +1,4 @@
+import { DisplayLink } from '../components/ui';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Minus, Monitor, Plus } from 'lucide-react';
@@ -222,9 +223,9 @@ function RoomsTab({ bath }: { bath: Bathhouse }) {
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-brown-soft">입장·퇴장 버튼을 누르면 이용자 화면과 입구 디스플레이에 즉시 반영됩니다. 인원은 0명 미만이 될 수 없어요.</p>
-        <a href={`#/display/rooms/${bath.id}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-xl bg-brown px-3 py-2 text-sm font-bold text-white">
+        <DisplayLink to={`/display/rooms/${bath.id}`} className="flex items-center gap-1 rounded-xl bg-brown px-3 py-2 text-sm font-bold text-white">
           <Monitor className="h-4 w-4" /> 전체 입구 디스플레이
-        </a>
+        </DisplayLink>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
         {rooms.map((r) => {
@@ -270,9 +271,9 @@ function RoomsTab({ bath }: { bath: Bathhouse }) {
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-brown-soft">
                   <span>업데이트 {formatClock(r.updatedAt)}</span>
-                  <a href={`#/display/room/${r.roomId}`} target="_blank" rel="noreferrer" className="underline">
+                  <DisplayLink to={`/display/room/${r.roomId}`} className="underline">
                     이 방 입구 디스플레이
-                  </a>
+                  </DisplayLink>
                 </div>
               </div>
             </Panel>

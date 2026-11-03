@@ -1,3 +1,4 @@
+import { DisplayLink } from '../components/ui';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, Clock, Droplets, Info, MapPin, Monitor, Navigation, Phone, Ticket, Wallet } from 'lucide-react';
@@ -240,9 +241,9 @@ export default function BathDetail() {
                 </div>
               );
             })}
-            <a href={`#/display/rooms/${bath.id}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-1.5 pt-1 text-xs font-semibold text-brown-soft underline">
+            <DisplayLink to={`/display/rooms/${bath.id}`} className="flex items-center justify-center gap-1.5 pt-1 text-xs font-semibold text-brown-soft underline">
               <Monitor className="h-3.5 w-3.5" /> 입구 디스플레이 화면 보기
-            </a>
+            </DisplayLink>
           </div>
         ) : (
           <p className="text-sm text-brown-soft">이 시설에는 혼잡도를 제공하는 찜질방이 없어요.</p>

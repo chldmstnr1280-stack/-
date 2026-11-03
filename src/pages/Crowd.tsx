@@ -1,3 +1,4 @@
+import { DisplayLink } from '../components/ui';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Monitor } from 'lucide-react';
 import { crowd, formatClock, quietHours } from '../lib/logic';
@@ -115,9 +116,9 @@ export default function CrowdPage() {
                 <div className="mt-2">
                   <CrowdBar current={r.currentOccupancy} recommended={r.recommendedOccupancy} />
                 </div>
-                <a href={`#/display/room/${r.roomId}`} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-1 text-xs font-semibold text-brown-soft underline">
+                <DisplayLink to={`/display/room/${r.roomId}`} className="mt-3 flex items-center gap-1 text-xs font-semibold text-brown-soft underline">
                   <Monitor className="h-3.5 w-3.5" /> 입구 디스플레이
-                </a>
+                </DisplayLink>
               </div>
             );
           })}

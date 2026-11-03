@@ -1,3 +1,4 @@
+import { DisplayLink } from './ui';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Monitor, RotateCcw, Scissors, Settings } from 'lucide-react';
@@ -22,12 +23,12 @@ export function OpsLinks({ dark = false }: { dark?: boolean }) {
       <Link to="/staff" className={item}>
         <Scissors className="h-4 w-4" /> 세신사 관리 화면
       </Link>
-      <a href="#/display/rooms/bath_001" target="_blank" rel="noreferrer" className={item}>
+      <DisplayLink to="/display/rooms/bath_001" className={item}>
         <Monitor className="h-4 w-4" /> 찜질방 입구 디스플레이 <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60" />
-      </a>
-      <a href="#/display/queue/bath_001" target="_blank" rel="noreferrer" className={item}>
+      </DisplayLink>
+      <DisplayLink to="/display/queue/bath_001" className={item}>
         <Monitor className="h-4 w-4" /> 세신 대기 공용 디스플레이 <ExternalLink className="ml-auto h-3.5 w-3.5 opacity-60" />
-      </a>
+      </DisplayLink>
     </div>
   );
 }
